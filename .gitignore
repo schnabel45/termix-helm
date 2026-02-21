@@ -1,0 +1,8 @@
+# Generated files
+/**/charts/*.tgz
+/**/tmpcharts/*.tgz
+SUMMARY.md
+INDEX.md
+LIBRARY-PATTERN.MD
+FILE-ORGANIZATION.txt
+*.sh
