@@ -36,11 +36,13 @@ jobs:
         id: get-version
         run: |
           VERSION=$(yq e '.version' "${CHART_DIR}/Chart.yaml")
+          APP_VERSION=$(yq e '.appVersion' "${CHART_DIR}/Chart.yaml")
           if [[ -z "$VERSION" ]]; then
             echo "Error: Could not find .version in ${CHART_DIR}/Chart.yaml"
             exit 1
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "app_version=$APP_VERSION" >> $GITHUB_OUTPUT
           echo "tag=v${VERSION}" >> $GITHUB_OUTPUT
 
       - name: Debug extracted values
@@ -48,6 +50,7 @@ jobs:
           echo "CHART_NAME     = ${{ env.CHART_NAME }}"
           echo "CHART_DIR      = ${{ env.CHART_DIR }}"
           echo "VERSION        = ${{ steps.get-version.outputs.version }}"
+          echo "APP_VERSION    = ${{ steps.get-version.outputs.app_version }}"
           echo "TAG            = ${{ steps.get-version.outputs.tag }}"
 
       - name: Create and push Git tag if it doesn't exist
@@ -102,7 +105,8 @@ jobs:
       - name: helm package
         run: |
           VERSION=${{ steps.get-version.outputs.version }}
-          helm package "${{ env.CHART_DIR }}" --version "${VERSION}" --app-version "${VERSION}"
+          APP_VERSION=${{ steps.get-version.outputs.app_version }}
+          helm package "${{ env.CHART_DIR }}" --version "${VERSION}" --app-version "${APP_VERSION}"
           ls -l *.tgz
           
       - name: Upload chart .tgz to the GitHub Release

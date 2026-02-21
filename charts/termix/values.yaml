@@ -4,6 +4,7 @@ replicaCount: 1
 
 image:
   repository: ghcr.io/lukegus/termix
+  tag: ""  # Defaults to Chart.appVersion if not specified
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
