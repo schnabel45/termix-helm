@@ -41,11 +41,19 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "tag=v${VERSION}" >> $GITHUB_OUTPUT
 
-      - name: Create GitHub Release
+      - name: Debug extracted values
+        run: |
+          echo "CHART_NAME     = ${{ env.CHART_NAME }}"
+          echo "CHART_DIR      = ${{ env.CHART_DIR }}"
+          echo "VERSION        = ${{ steps.get-version.outputs.version }}"
+          echo "TAG            = ${{ steps.get-version.outputs.tag }}"
+
+      - name: Create or Update GitHub Release
         uses: softprops/action-gh-release@v2
+        id: create-release  # ← give it an id so we can access its outputs if needed
         with:
           tag_name: ${{ steps.get-version.outputs.tag }}
-          name: Release ${{ env.CHART_NAME }}-${{ steps.get-version.outputs.tag }}
+          name: Release ${{ env.CHART_NAME }} ${{ steps.get-version.outputs.tag }}
           body: |
             Helm chart release for ${{ env.CHART_NAME }} version ${{ steps.get-version.outputs.version }}.
             
@@ -53,10 +61,27 @@ jobs:
             - See commit history for changes
           draft: false
           prerelease: false
-          generate_release_notes: true   # Optional: auto-add release notes from commits
-          fail_on_unmatched_files: true
+          generate_release_notes: true
+          fail_on_unmatched_files: false
         env:
-          GITHUB_TOKEN: ${{ secrets.REPO_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # ← prefer default token
+
+      # - name: Create GitHub Release
+      #   uses: softprops/action-gh-release@v2
+      #   with:
+      #     tag_name: ${{ steps.get-version.outputs.tag }}
+      #     name: Release ${{ env.CHART_NAME }}-${{ steps.get-version.outputs.tag }}
+      #     body: |
+      #       Helm chart release for ${{ env.CHART_NAME }} version ${{ steps.get-version.outputs.version }}.
+            
+      #       - Auto-generated from Chart.yaml
+      #       - See commit history for changes
+      #     draft: false
+      #     prerelease: false
+      #     generate_release_notes: true   # Optional: auto-add release notes from commits
+      #     fail_on_unmatched_files: true
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.REPO_TOKEN }}
 
       - name: Package the Helm chart
         uses: azure/setup-helm@v4
@@ -64,7 +89,7 @@ jobs:
       - name: helm package
         run: |
           VERSION=${{ steps.get-version.outputs.version }}
-          helm package "${CHART_DIR}" --version "${VERSION}" --app-version "${VERSION}"
+          helm package "${{ env.CHART_DIR }}" --version "${VERSION}" --app-version "${VERSION}"
           ls -l *.tgz
           
       - name: Upload chart .tgz to the GitHub Release
@@ -73,18 +98,34 @@ jobs:
           tag_name: ${{ steps.get-version.outputs.tag }}
           files: ./*.tgz
         env:
-          GITHUB_TOKEN: ${{ secrets.REPO_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish-to-central:
     needs: release
     runs-on: ubuntu-latest
     steps:
+      - name: Debug job outputs from release job
+        run: |
+          echo "needs.release.outputs.CHART_NAME    = ${{ needs.release.outputs.CHART_NAME }}"
+          echo "needs.release.outputs.CHART_VERSION = ${{ needs.release.outputs.CHART_VERSION }}"
+          echo "needs.release.outputs.release_tag   = ${{ needs.release.outputs.release_tag }}"
+
       - name: Download chart from GitHub Release
         run: |
-          TAG=${{ needs.release.outputs.release_tag }}
-          gh release download $TAG --pattern "*.tgz"
+          TAG="${{ needs.release.outputs.release_tag }}"
+          echo "Attempting to download release assets for tag: $TAG"
+          gh release view "$TAG" || echo "Release view failed - may not exist yet or permission issue"
+          gh release download "$TAG" --pattern "*.tgz" --clobber || { echo "Download failed"; exit 1; }
+          ls -l *.tgz
         env:
-          GITHUB_TOKEN: ${{ secrets.REPO_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # - name: Download chart from GitHub Release
+      #   run: |
+      #     TAG=${{ needs.release.outputs.release_tag }}
+      #     gh release download $TAG --pattern "*.tgz"
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.REPO_TOKEN }}
 
       - name: Checkout central repo's gh-pages branch
         uses: actions/checkout@v4
