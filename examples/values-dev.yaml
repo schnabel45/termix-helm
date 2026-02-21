@@ -6,7 +6,6 @@ replicaCount: 1
 image:
   repository: ghcr.io/lukegus/termix
   pullPolicy: Always
-  tag: "latest"
 
 service:
   type: NodePort
