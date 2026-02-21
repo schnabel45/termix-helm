@@ -16,6 +16,8 @@ jobs:
       CHART_NAME: ${{ env.CHART_NAME }}
       CHART_VERSION: ${{ steps.get-version.outputs.version }}
       release_tag: ${{ steps.get-version.outputs.tag }}
+    permissions:
+      contents: write
     steps:
       - name: Configure Git
         run: |
@@ -103,6 +105,8 @@ jobs:
   publish-to-central:
     needs: release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Debug job outputs from release job
         run: |
