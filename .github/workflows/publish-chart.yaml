@@ -7,7 +7,7 @@ on:
 
 env:
   CHART_NAME: termix              # ← CHANGE THIS to your chart's name (used for paths and release naming)
-  CHART_DIR: charts/$CHART_NAME   # ← CHANGE THIS to your chart's directory relative to repo root
+  CHART_DIR: charts/${CHART_NAME}   # ← CHANGE THIS to your chart's directory relative to repo root
 
 jobs:
   release:
