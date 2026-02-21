@@ -23,20 +23,20 @@ THIS WAS WRITTEN BY AI, DO NOT USE THIS IF YOU CRINGE AT THAT FACT
 
 ### Helm Repo
 ```bash
-helm repo add termix https://schnabel45.github.io/termix-helm/
+helm repo add tschnabel45x https://schnabel45.github.io/
 helm repo update
 ```
 
 ### Basic Installation
 
 ```bash
-helm install termix termix/termix
+helm install termix schnabel45/termix
 ```
 
 ### With Custom Values
 
 ```bash
-helm install termix termix/termix -f custom-values.yaml
+helm install termix schnabel45/termix -f custom-values.yaml
 ```
 
 ### Multiple Instances
@@ -44,8 +44,8 @@ helm install termix termix/termix -f custom-values.yaml
 Deploy multiple instances with different configurations:
 
 ```bash
-helm install termix-prod termix/termix -f prod-values.yaml
-helm install termix-test termix/termix -f test-values.yaml
+helm install termix-prod schnabel45/termix -f prod-values.yaml
+helm install termix-test schnabel45/termix -f test-values.yaml
 ```
 
 ## Configuration
@@ -144,7 +144,7 @@ Visit the configured ingress hostname (e.g., `termix.example.com`)
 ### Update Values
 
 ```bash
-helm upgrade termix termix/termix -f custom-values.yaml
+helm upgrade termix schnabel45/termix -f custom-values.yaml
 ```
 
 ### Uninstall
@@ -196,7 +196,7 @@ resources:
 Deploy:
 
 ```bash
-helm install termix-prod termix/termix -f prod-values.yaml
+helm install termix-prod schnabel45/termix -f prod-values.yaml
 ```
 
 ### Example 2: Development Deployment
@@ -229,7 +229,7 @@ resources:
 Deploy:
 
 ```bash
-helm install termix-dev termix/termix -f dev-values.yaml
+helm install termix-dev schnabel45/termix -f dev-values.yaml
 ```
 
 ## Support
