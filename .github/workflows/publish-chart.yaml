@@ -13,7 +13,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     outputs:
-      CHART_NAME: ${CHART_NAME}
+      CHART_NAME: ${{ env.CHART_NAME }}
       CHART_VERSION: ${{ steps.get-version.outputs.version }}
       release_tag: ${{ steps.get-version.outputs.tag }}
     steps:
@@ -45,9 +45,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.get-version.outputs.tag }}
-          name: Release ${CHART_NAME}-${{ steps.get-version.outputs.tag }}
+          name: Release ${{ env.CHART_NAME }}-${{ steps.get-version.outputs.tag }}
           body: |
-            Helm chart release for ${CHART_NAME} version ${{ steps.get-version.outputs.version }}.
+            Helm chart release for ${{ env.CHART_NAME }} version ${{ steps.get-version.outputs.version }}.
             
             - Auto-generated from Chart.yaml
             - See commit history for changes
@@ -99,7 +99,7 @@ jobs:
           mv *.tgz central/
           cd central
           # Optional: remove older versions, keep latest 3 to avoid repo bloat
-          ls -1 ${CHART_NAME}-*.tgz 2>/dev/null | sort -rV | tail -n +4 | xargs rm -f || true
+          ls -1 ${{ needs.release.outputs.CHART_NAME }}-*.tgz 2>/dev/null | sort -rV | tail -n +4 | xargs rm -f || true
 
       - name: Commit and push to central repo
         run: |
