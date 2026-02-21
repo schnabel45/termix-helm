@@ -12,6 +12,10 @@ env:
 jobs:
   release:
     runs-on: ubuntu-latest
+    outputs:
+      CHART_NAME: ${CHART_NAME}
+      CHART_VERSION: ${{ steps.get-version.outputs.version }}
+      release_tag: ${{ steps.get-version.outputs.tag }}
     steps:
       - name: Configure Git
         run: |
@@ -77,7 +81,7 @@ jobs:
     steps:
       - name: Download chart from GitHub Release
         run: |
-          TAG=v${{ needs.release.outputs.version }}
+          TAG=${{ needs.release.outputs.release_tag }}
           gh release download $TAG --pattern "*.tgz"
         env:
           GITHUB_TOKEN: ${{ secrets.REPO_TOKEN }}
@@ -101,5 +105,5 @@ jobs:
         run: |
           cd central
           git add *.tgz
-          git commit -m "Add/update $CHART_NAME-${{ steps.get-version.outputs.tag }} from source repo" || echo "No changes to commit"
+          git commit -m "Add/update ${{ needs.release.outputs.CHART_NAME }}-${{ needs.release.outputs.release_tag }} from source repo" || echo "No changes to commit"
           git push origin gh-pages
