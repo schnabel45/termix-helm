@@ -41,9 +41,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.get-version.outputs.tag }}
-          name: Release $CHART_NAME-${{ steps.get-version.outputs.tag }}
+          name: Release ${CHART_NAME}-${{ steps.get-version.outputs.tag }}
           body: |
-            Helm chart release for $CHART_NAME version ${{ steps.get-version.outputs.version }}.
+            Helm chart release for ${CHART_NAME} version ${{ steps.get-version.outputs.version }}.
             
             - Auto-generated from Chart.yaml
             - See commit history for changes
@@ -62,12 +62,23 @@ jobs:
           VERSION=${{ steps.get-version.outputs.version }}
           helm package "${CHART_DIR}" --version "${VERSION}" --app-version "${VERSION}"
           ls -l *.tgz
-
+          
       - name: Upload chart .tgz to the GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.get-version.outputs.tag }}
           files: ./*.tgz
+        env:
+          GITHUB_TOKEN: ${{ secrets.REPO_TOKEN }}
+
+  publish-to-central:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download chart from GitHub Release
+        run: |
+          TAG=v${{ needs.release.outputs.version }}
+          gh release download $TAG --pattern "*.tgz"
         env:
           GITHUB_TOKEN: ${{ secrets.REPO_TOKEN }}
 
