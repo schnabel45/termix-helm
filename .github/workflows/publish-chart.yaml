@@ -1,0 +1,94 @@
+name: Release Helm Chart and Publish to Central Repo
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:  # Allows manual trigger from GitHub UI
+
+env:
+  CHART_NAME: termix              # ← CHANGE THIS to your chart's name (used for paths and release naming)
+  CHART_DIR: charts/$CHART_NAME   # ← CHANGE THIS to your chart's directory relative to repo root
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure Git
+        run: |
+          git config --global user.name "$GITHUB_ACTOR"
+          git config --global user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Allows git operations if needed later
+
+      - name: Install yq
+        uses: mikefarah/yq@v4.44.3
+
+      - name: Extract chart version from Chart.yaml
+        id: get-version
+        run: |
+          VERSION=$(yq e '.version' "${CHART_DIR}/Chart.yaml")
+          if [[ -z "$VERSION" ]]; then
+            echo "Error: Could not find .version in ${CHART_DIR}/Chart.yaml"
+            exit 1
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.get-version.outputs.tag }}
+          name: Release $CHART_NAME-${{ steps.get-version.outputs.tag }}
+          body: |
+            Helm chart release for $CHART_NAME version ${{ steps.get-version.outputs.version }}.
+            
+            - Auto-generated from Chart.yaml
+            - See commit history for changes
+          draft: false
+          prerelease: false
+          generate_release_notes: true   # Optional: auto-add release notes from commits
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Package the Helm chart
+        uses: azure/setup-helm@v4
+
+      - name: helm package
+        run: |
+          VERSION=${{ steps.get-version.outputs.version }}
+          helm package "${CHART_DIR}" --version "${VERSION}" --app-version "${VERSION}"
+          ls -l *.tgz
+
+      - name: Upload chart .tgz to the GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.get-version.outputs.tag }}
+          files: ./*.tgz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout central repo's gh-pages branch
+        uses: actions/checkout@v4
+        with:
+          repository: schnabel45/helm-charts
+          token: ${{ secrets.CENTRAL_PAT }}
+          ref: gh-pages
+          path: central
+
+      - name: Copy chart to central and clean old versions (optional)
+        run: |
+          mv *.tgz central/
+          cd central
+          # Optional: remove older versions, keep latest 3 to avoid repo bloat
+          ls -1 ${CHART_NAME}-*.tgz 2>/dev/null | sort -rV | tail -n +4 | xargs rm -f || true
+
+      - name: Commit and push to central repo
+        run: |
+          cd central
+          git add *.tgz
+          git commit -m "Add/update $CHART_NAME-${{ steps.get-version.outputs.tag }} from source repo" || echo "No changes to commit"
+          git push origin gh-pages
