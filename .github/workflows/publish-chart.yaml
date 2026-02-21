@@ -108,6 +108,14 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout central repo's gh-pages branch
+        uses: actions/checkout@v4
+        with:
+          repository: schnabel45/helm-charts
+          token: ${{ secrets.CENTRAL_PAT }}
+          ref: gh-pages
+          path: helm-chart
+
       - name: Debug job outputs from release job
         run: |
           echo "needs.release.outputs.CHART_NAME    = ${{ needs.release.outputs.CHART_NAME }}"
@@ -119,7 +127,7 @@ jobs:
           TAG="${{ needs.release.outputs.release_tag }}"
           echo "Attempting to download release assets for tag: $TAG"
           gh release view "$TAG" || echo "Release view failed - may not exist yet or permission issue"
-          gh release download "$TAG" --pattern "*.tgz" --clobber || { echo "Download failed"; exit 1; }
+          gh release download "$TAG" --pattern "*.tgz" -D helm-chart --clobber || { echo "Download failed"; exit 1; }
           ls -l *.tgz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -141,7 +149,7 @@ jobs:
 
       - name: Copy chart to central and clean old versions (optional)
         run: |
-          mv *.tgz central/
+          mv helm-chart/*.tgz central/
           cd central
           # Optional: remove older versions, keep latest 3 to avoid repo bloat
           ls -1 ${{ needs.release.outputs.CHART_NAME }}-*.tgz 2>/dev/null | sort -rV | tail -n +4 | xargs rm -f || true
