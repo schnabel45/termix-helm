@@ -119,6 +119,11 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Configure Git
+        run: |
+          git config --global user.name "$GITHUB_ACTOR"
+          git config --global user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
       - name: Checkout code
         uses: actions/checkout@v4
         with:
